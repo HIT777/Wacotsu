@@ -4,30 +4,26 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Wacotsu
+namespace NiconicoApi.Live
 {
 	/// <summary>
-	/// 生放送の座席を表すクラス
+	/// ニコニコ生放送の放送状態を表す
 	/// </summary>
-	public class Seat
+	public class Status
 	{
 		/// <summary>
-		/// 座席エリア
+		/// 部屋名
 		/// </summary>
-		public string Label { get; set; }
+		public string RoomName { get; set; }
 
 		/// <summary>
 		/// 座席番号
 		/// </summary>
-		public int Number { get; set; }
+		public int SeatNumber { get; set; }
 
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <returns></returns>
 		public override string ToString()
 		{
-			return string.Format("{0} - {1}", this.Label, this.Number);
+			return string.Format("{0} - {1}", RoomName, SeatNumber);
 		}
 	}
 }

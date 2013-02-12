@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,94 +24,132 @@ namespace Wacotsu
 		public event EventHandler<FailedEventArgs> Failed = delegate { };
 
 		/// <summary>
-		/// 予約中の放送 -> 座席取得タイマーへのマップ 
+		/// タイマーが開場までの残り時間をチェックするたびに発生するイベント
 		/// </summary>
-		private IDictionary<Live, Timer> timers = new Dictionary<Live, Timer>();
+		public event EventHandler<ElapsedEventArgs> TimerElapsed = delegate { };
 
 		/// <summary>
-		/// 予約した放送 
+		/// 予約中の放送ID -> 開場時間のマップ
 		/// </summary>
-		private ICollection<Live> reserved = new List<Live>();
-
-		/// <summary>
-		/// 座席確保に成功した放送
-		/// </summary>
-		private ICollection<Live> finished = new List<Live>();
+		private IDictionary<string, DateTime> reservedLiveTimes;
 
 		/// <summary>
 		/// 
 		/// </summary>
-		private SeatFetcher seatFetcher;
+		private NiconicoApi.NiconicoApi api;
 
 		/// <summary>
 		/// 
 		/// </summary>
-		public Wacotsu(string userSession)
+		public Wacotsu(NiconicoApi.NiconicoApi api, int pollingMillisecond = 3000)
 		{
-			this.seatFetcher = new SeatFetcher(userSession);
+			this.api = api;
+			this.reservedLiveTimes = new ConcurrentDictionary<string, DateTime>();
+
+			var timer = new Timer(pollingMillisecond);
+			timer.Elapsed += (sender, e) => {
+				if (reservedLiveTimes.Count < 1) {
+					return;
+				}
+
+				var serverTime = api.GetServerTimeAsync().GetAwaiter().GetResult();
+
+				foreach (var pair in reservedLiveTimes) {
+					var liveId = pair.Key;
+					var openTime = pair.Value;
+
+					var leftTimeSpan = pair.Value - serverTime;
+					this.TimerElapsed(this, new ElapsedEventArgs { leftTime = leftTimeSpan, LiveId = liveId });
+					// 開場までの残り時間がわずかになったら席取得を開始する
+					if (leftTimeSpan.TotalMilliseconds <= pollingMillisecond + 500) {
+						reservedLiveTimes.Remove(liveId);
+						getLiveStatusAsync(liveId);
+					}
+				}
+			};
+			timer.Start();
 		}
 
 		/// <summary>
-		/// 座席確保の予約をする
+		/// 放送を予約する
 		/// </summary>
-		/// <param name="live"></param>
-		public bool Reserve(Live live)
+		/// <param name="liveId">放送のID</param>
+		/// <param name="openTime">放送の開場時刻</param>
+		public async void Reserve(string liveId, DateTime openTime)
 		{
-			// すでに予約済・確保済ならば中断
-			if (this.reserved.Contains(live) ||
-				this.finished.Contains(live))
-			{
-				return false;
+			// エラー確認のため最初に一度取得を試みる
+			try {
+				var status = await api.GetLiveStatusAsync(liveId);
+			}
+			catch (Exception e) {
+				if (e is NiconicoApi.Live.StatusException) {
+					var errorReason = (e as NiconicoApi.Live.StatusException).Reason;
+					this.Failed(this, new FailedEventArgs { LiveId = liveId, FailReason = errorReason });
+					return;
+				}
+				else {
+					this.Failed(this, new FailedEventArgs { LiveId = liveId, FailReason = NiconicoApi.Live.StatusErrorReason.Unknown });
+					return;
+				}
 			}
 
-			var timer = new Timer();
-			timer.Elapsed += (sender, args) =>
-			{
-				var result = this.seatFetcher.Fetch(live);
-				if (result.Status == Status.Ok)
-				{
-					this.finished.Add(live);
-					this.Success(this, new SuccessEventArgs { Live = live, Seat = result.Seat });
-					this.Cancel(live);
-					return;
-				}
-				else if(result.Status != Status.ComingSoon)
-				{
-					this.Failed(this, new FailedEventArgs { Live = live, Status = result.Status });
-					this.Cancel(live);
-					return;
-				}
-				// 残り時間を取得
-				var leftSpan = live.OpenTime - result.Time;
-				if (leftSpan.TotalSeconds <= 5)
-				{
-					timer.Interval = 1;
-				}
-				else
-				{
-					timer.Interval = leftSpan.TotalMilliseconds - 5000;	
-				}
-				timer.Start();
-			};
-			timer.AutoReset = false;
-			timer.Interval = 1;
-			timer.Start();
-			this.timers.Add(live, timer);
-			return true;
-		}
-
-		/// <summary>
-		/// 座席確保の予約を取り消す
-		/// </summary>
-		/// <param name="live"></param>
-		public void Cancel(Live live)
-		{
-			if (this.timers.ContainsKey(live) == false)
-			{
+			// 放送開場時間までの残り時間を取得
+			var serverTime = await api.GetServerTimeAsync();
+			var leftTimeSpan = openTime - serverTime;
+			if (leftTimeSpan.TotalMilliseconds <= 3000) {
+				getLiveStatusAsync(liveId);
 				return;
 			}
-			this.timers[live].Stop();
-			this.timers.Remove(live);
+			reservedLiveTimes.Add(liveId, openTime);
+		}
+
+		/// <summary>
+		/// 予約した放送をキャンセルする
+		/// </summary>
+		/// <param name="liveId"></param>
+		public void Cancel(string liveId)
+		{
+			if (reservedLiveTimes.ContainsKey(liveId) == false) {
+				return;
+			}
+
+			reservedLiveTimes.Remove(liveId);
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="liveId"></param>
+		private async void getLiveStatusAsync(string liveId)
+		{
+			NiconicoApi.Live.Status status = null;
+			try {
+				var retryCounter = 0;
+				while (status == null) {
+					status = await api.GetLiveStatusAsync(liveId);
+					retryCounter++;
+					// 20回以上再試行しても座席確保できない場合は原因不明のエラーを投げる
+					if (retryCounter > 20) {
+						throw new NiconicoApi.Live.StatusException(NiconicoApi.Live.StatusErrorReason.Unknown);
+					}
+				}
+				this.Success(this, new SuccessEventArgs { LiveId = liveId, LiveStatus = status });
+			}
+			catch (Exception e) {
+				if (e is NiconicoApi.Live.StatusException) {
+					var reason = (e as NiconicoApi.Live.StatusException).Reason;
+					this.Failed(this, new FailedEventArgs { LiveId = liveId, FailReason = reason });
+				}
+				else {
+					this.Failed(this, new FailedEventArgs { LiveId = liveId, FailReason = NiconicoApi.Live.StatusErrorReason.Unknown });
+				}
+			}
+			finally {
+				// 成功・失敗に限らず予約は終わったので予約リストに残っていれば予約リストから削除
+				if (reservedLiveTimes.ContainsKey(liveId)) {
+					reservedLiveTimes.Remove(liveId);
+				}
+			}
 		}
 
 	}

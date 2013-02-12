@@ -1,4 +1,4 @@
-﻿namespace Wacotsu
+﻿namespace WacotsuForm
 {
 	partial class WacotsuForm
 	{
@@ -36,8 +36,7 @@
 			this.availableLiveListView = new System.Windows.Forms.ListView();
 			this.thumbnailImageList = new System.Windows.Forms.ImageList(this.components);
 			this.reservedLiveListView = new System.Windows.Forms.ListView();
-			this.gotLiveListView = new System.Windows.Forms.ListView();
-			this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+			this.succeededLiveListView = new System.Windows.Forms.ListView();
 			this.groupBox2 = new System.Windows.Forms.GroupBox();
 			this.groupBox3 = new System.Windows.Forms.GroupBox();
 			this.notifyIcon = new System.Windows.Forms.NotifyIcon(this.components);
@@ -45,7 +44,6 @@
 			this.taskTrayEnabledCheckBox = new System.Windows.Forms.CheckBox();
 			this.ballonTipEnabledCheckBox = new System.Windows.Forms.CheckBox();
 			this.clockLabel = new System.Windows.Forms.Label();
-			this.clockTimer = new System.Windows.Forms.Timer(this.components);
 			this.statusBar.SuspendLayout();
 			this.groupBox1.SuspendLayout();
 			this.groupBox2.SuspendLayout();
@@ -111,18 +109,18 @@
 			this.reservedLiveListView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.listView_MouseClick);
 			this.reservedLiveListView.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.listView_MouseDoubleClick);
 			// 
-			// gotLiveListView
+			// succeededLiveListView
 			// 
-			this.gotLiveListView.LargeImageList = this.thumbnailImageList;
-			this.gotLiveListView.Location = new System.Drawing.Point(6, 18);
-			this.gotLiveListView.Name = "gotLiveListView";
-			this.gotLiveListView.Size = new System.Drawing.Size(260, 198);
-			this.gotLiveListView.TabIndex = 3;
-			this.gotLiveListView.TileSize = new System.Drawing.Size(230, 44);
-			this.gotLiveListView.UseCompatibleStateImageBehavior = false;
-			this.gotLiveListView.View = System.Windows.Forms.View.Tile;
-			this.gotLiveListView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.listView_MouseClick);
-			this.gotLiveListView.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.listView_MouseDoubleClick);
+			this.succeededLiveListView.LargeImageList = this.thumbnailImageList;
+			this.succeededLiveListView.Location = new System.Drawing.Point(6, 18);
+			this.succeededLiveListView.Name = "succeededLiveListView";
+			this.succeededLiveListView.Size = new System.Drawing.Size(260, 198);
+			this.succeededLiveListView.TabIndex = 3;
+			this.succeededLiveListView.TileSize = new System.Drawing.Size(230, 44);
+			this.succeededLiveListView.UseCompatibleStateImageBehavior = false;
+			this.succeededLiveListView.View = System.Windows.Forms.View.Tile;
+			this.succeededLiveListView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.listView_MouseClick);
+			this.succeededLiveListView.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.listView_MouseDoubleClick);
 			// 
 			// groupBox2
 			// 
@@ -136,7 +134,7 @@
 			// 
 			// groupBox3
 			// 
-			this.groupBox3.Controls.Add(this.gotLiveListView);
+			this.groupBox3.Controls.Add(this.succeededLiveListView);
 			this.groupBox3.Location = new System.Drawing.Point(291, 312);
 			this.groupBox3.Name = "groupBox3";
 			this.groupBox3.Size = new System.Drawing.Size(275, 225);
@@ -165,9 +163,9 @@
 			// taskTrayEnabledCheckBox
 			// 
 			this.taskTrayEnabledCheckBox.AutoSize = true;
-			this.taskTrayEnabledCheckBox.Checked = global::Wacotsu.Properties.Settings.Default.TaskTrayEnabled;
+			this.taskTrayEnabledCheckBox.Checked = global::WacotsuForm.Properties.Settings.Default.TaskTrayEnabled;
 			this.taskTrayEnabledCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-			this.taskTrayEnabledCheckBox.DataBindings.Add(new System.Windows.Forms.Binding("Checked", global::Wacotsu.Properties.Settings.Default, "TaskTrayEnabled", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+			this.taskTrayEnabledCheckBox.DataBindings.Add(new System.Windows.Forms.Binding("Checked", global::WacotsuForm.Properties.Settings.Default, "TaskTrayEnabled", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
 			this.taskTrayEnabledCheckBox.Location = new System.Drawing.Point(6, 18);
 			this.taskTrayEnabledCheckBox.Name = "taskTrayEnabledCheckBox";
 			this.taskTrayEnabledCheckBox.Size = new System.Drawing.Size(156, 16);
@@ -178,9 +176,9 @@
 			// ballonTipEnabledCheckBox
 			// 
 			this.ballonTipEnabledCheckBox.AutoSize = true;
-			this.ballonTipEnabledCheckBox.Checked = global::Wacotsu.Properties.Settings.Default.BallonTipEnabled;
+			this.ballonTipEnabledCheckBox.Checked = global::WacotsuForm.Properties.Settings.Default.BallonTipEnabled;
 			this.ballonTipEnabledCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-			this.ballonTipEnabledCheckBox.DataBindings.Add(new System.Windows.Forms.Binding("Checked", global::Wacotsu.Properties.Settings.Default, "BallonTipEnabled", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+			this.ballonTipEnabledCheckBox.DataBindings.Add(new System.Windows.Forms.Binding("Checked", global::WacotsuForm.Properties.Settings.Default, "BallonTipEnabled", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
 			this.ballonTipEnabledCheckBox.Location = new System.Drawing.Point(168, 18);
 			this.ballonTipEnabledCheckBox.Name = "ballonTipEnabledCheckBox";
 			this.ballonTipEnabledCheckBox.Size = new System.Drawing.Size(177, 16);
@@ -197,12 +195,6 @@
 			this.clockLabel.Size = new System.Drawing.Size(192, 19);
 			this.clockLabel.TabIndex = 9;
 			this.clockLabel.Text = "0000/00/00（月）00:00";
-			// 
-			// clockTimer
-			// 
-			this.clockTimer.Enabled = true;
-			this.clockTimer.Interval = 60000;
-			this.clockTimer.Tick += new System.EventHandler(this.clockTimer_Tick);
 			// 
 			// WacotsuForm
 			// 
@@ -221,7 +213,7 @@
 			this.MaximizeBox = false;
 			this.Name = "WacotsuForm";
 			this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
-			this.Text = "Wacotsu 0.2";
+			this.Text = "Wacotsu 0.3";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.WacotsuForm_FormClosing);
 			this.Load += new System.EventHandler(this.WacotsuForm_Load);
 			this.ClientSizeChanged += new System.EventHandler(this.WacotsuForm_ClientSizeChanged);
@@ -245,8 +237,7 @@
 		private System.Windows.Forms.ListView availableLiveListView;
 		private System.Windows.Forms.ImageList thumbnailImageList;
 		private System.Windows.Forms.ListView reservedLiveListView;
-		private System.Windows.Forms.ListView gotLiveListView;
-		private System.Windows.Forms.ToolTip toolTip1;
+		private System.Windows.Forms.ListView succeededLiveListView;
 		private System.Windows.Forms.GroupBox groupBox2;
 		private System.Windows.Forms.GroupBox groupBox3;
 		private System.Windows.Forms.NotifyIcon notifyIcon;
@@ -254,7 +245,6 @@
 		private System.Windows.Forms.CheckBox ballonTipEnabledCheckBox;
 		private System.Windows.Forms.GroupBox groupBox4;
 		private System.Windows.Forms.Label clockLabel;
-		private System.Windows.Forms.Timer clockTimer;
 
 	}
 }

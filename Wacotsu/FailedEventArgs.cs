@@ -8,7 +8,8 @@ namespace Wacotsu
 {
 	public class FailedEventArgs : EventArgs
 	{
-		public Live Live { get; set; }
-		public Status Status { get; set; }
+		public string LiveId { get; set; }
+
+		public NiconicoApi.Live.StatusErrorReason FailReason { get; set; }
 	}
 }

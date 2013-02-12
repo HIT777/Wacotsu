@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace Wacotsu
+namespace WacotsuTest
 {
 	static class Program
 	{
@@ -16,7 +16,7 @@ namespace Wacotsu
 		{
 			Application.EnableVisualStyles();
 			Application.SetCompatibleTextRenderingDefault(false);
-			Application.Run(new WacotsuForm());
+			Application.Run(new Form1());
 		}
 	}
 }

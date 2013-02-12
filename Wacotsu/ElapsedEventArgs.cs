@@ -6,12 +6,10 @@ using System.Threading.Tasks;
 
 namespace Wacotsu
 {
-	public class FetchResult
+	public class ElapsedEventArgs
 	{
-		public DateTime Time { get; set; }
+		public TimeSpan leftTime { get; set; }
 
-		public Status Status { get; set; }
-
-		public Seat Seat { get; set; }
+		public string LiveId { get; set; }
 	}
 }
