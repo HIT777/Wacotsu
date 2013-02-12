@@ -109,12 +109,6 @@ namespace WacotsuForm
 			serverTime = await api.GetServerTimeAsync();
 			clockLabel.Text = serverTime.ToString("yyyy/MM/dd（ddd）HH:mm");
 			updateListView();
-
-			// 確保したにもかかわらず放置していたら座席をとられるので定期的に座席を確保しておく
-			foreach (var item in succeededLiveListView.Items.Cast<ListViewItem>()) {
-				var liveId = item.Name;
-				await api.GetLiveStatusAsync(liveId);
-			}
 		}
 
 		/// <summary>
@@ -158,8 +152,8 @@ namespace WacotsuForm
 					var tipDescription = e.LiveStatus.ToString();
 					notifyIcon.ShowBalloonTip(3000, tipTitle, tipDescription, ToolTipIcon.Info);
 				}
-				// フォームを点滅させて通知する
-				Activate();
+				// ブラウザで開く
+				browser.Open(liveInfo.WatchUri);
 
 				// 確保成功リストに移動する
 				var itemText = string.Format("<<{0}>>\r\n{1}", e.LiveStatus, liveInfo.Title);
