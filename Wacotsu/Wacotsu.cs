@@ -29,6 +29,21 @@ namespace Wacotsu
 		public event EventHandler<ElapsedEventArgs> TimerElapsed = delegate { };
 
 		/// <summary>
+		/// サーバーへのアクセスを開始した時
+		/// </summary>
+		public event EventHandler<LiveEventArgs> StartAccess = delegate { };
+
+		/// <summary>
+		/// サーバーからの返事が返ってきた時
+		/// </summary>
+		public event EventHandler<LiveEventArgs> ReceiveResponse = delegate { };
+
+		/// <summary>
+		/// アクセスを再試行したとき
+		/// </summary>
+		public event EventHandler<LiveEventArgs> RetryAccess = delegate { };
+
+		/// <summary>
 		/// 予約中の放送ID -> 開場時間のマップ
 		/// </summary>
 		private IDictionary<string, DateTime> reservedLiveTimes;
@@ -123,10 +138,16 @@ namespace Wacotsu
 		private async void getLiveStatusAsync(string liveId)
 		{
 			NiconicoApi.Live.Status status = null;
+			var eventArgs = new LiveEventArgs { LiveId = liveId };
 			try {
 				var retryCounter = 0;
 				while (status == null) {
+					if (retryCounter > 0) {
+						this.RetryAccess(this, eventArgs);
+					}
+					this.StartAccess(this, eventArgs);
 					status = await api.GetLiveStatusAsync(liveId);
+					this.ReceiveResponse(this, eventArgs);
 					retryCounter++;
 					// 20回以上再試行しても座席確保できない場合は原因不明のエラーを投げる
 					if (retryCounter > 20) {

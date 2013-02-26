@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Wacotsu
 {
-	public class FailedEventArgs : LiveEventArgs
+	public class LiveEventArgs : EventArgs
 	{
-		public NiconicoApi.Live.StatusErrorReason FailReason { get; set; }
+		public string LiveId { get; set; }
 	}
 }
