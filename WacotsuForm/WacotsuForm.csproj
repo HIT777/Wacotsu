@@ -115,6 +115,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\wacotst_white.ico" />
+    <Content Include="SQLite.Interop.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NiconicoApi\NiconicoApi.csproj">
