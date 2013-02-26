@@ -65,7 +65,8 @@
 			// statusBarLabel
 			// 
 			this.statusBarLabel.Name = "statusBarLabel";
-			this.statusBarLabel.Size = new System.Drawing.Size(0, 17);
+			this.statusBarLabel.Size = new System.Drawing.Size(72, 17);
+			this.statusBarLabel.Text = "ステータスバー";
 			// 
 			// groupBox1
 			// 

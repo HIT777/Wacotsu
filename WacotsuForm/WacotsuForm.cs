@@ -47,16 +47,7 @@ namespace WacotsuForm
 			liveInfos = new Dictionary<string, NiconicoApi.Live.Info>();
 		}
 
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		private void WacotsuForm_Load(object sender, EventArgs e)
-		{
-			init();
-		}
-
+		#region 初期化
 		/// <summary>
 		/// 初期化
 		/// </summary>
@@ -73,6 +64,9 @@ namespace WacotsuForm
 			wacotsu = new Wacotsu.Wacotsu(api);
 			wacotsu.Success += wacotsu_Success;
 			wacotsu.Failed += wacotsu_Failed;
+			wacotsu.StartAccess += wacotsu_StartAccess;
+			wacotsu.ReceiveResponse += wacotsu_ReceiveResponse;
+			wacotsu.RetryAccess += wacotsu_RetryAccess;
 
 			loadAvailableLiveInfoList();
 			initClock();
@@ -104,37 +98,9 @@ namespace WacotsuForm
 			clockTimer.Start();
 		}
 
-		private async void clockTimer_Tick(object sender, EventArgs e)
-		{
-			serverTime = await api.GetServerTimeAsync();
-			clockLabel.Text = serverTime.ToString("yyyy/MM/dd（ddd）HH:mm");
-			updateListView();
-		}
+		#endregion
 
-		/// <summary>
-		/// 予約可能な放送一覧をWebから読み込む
-		/// </summary>
-		private async void loadAvailableLiveInfoList()
-		{
-			var httpClient = new HttpClient();
-
-			availableLiveListView.BeginUpdate();
-
-			foreach (var liveInfo in await api.GetRecentLiveInfos()) {
-				// 画像URLから画像データを作成する
-				if (thumbnailImageList.Images.ContainsKey(liveInfo.Id) == false) {
-					var image = Image.FromStream(await httpClient.GetStreamAsync(liveInfo.ImageUri));
-					thumbnailImageList.Images.Add(liveInfo.Id, image);
-				}
-				liveInfos.Add(liveInfo.Id, liveInfo);
-				// 予約可能リストに追加する
-				availableLiveListView.Items.Add(liveInfo.Id, liveInfo.Title, liveInfo.Id);
-			}
-
-			updateListView();
-
-			availableLiveListView.EndUpdate();
-		}
+		#region Wacotsu本体のイベントハンドラ
 
 		/// <summary>
 		/// Wacotsuが座席確保に成功した時
@@ -163,15 +129,14 @@ namespace WacotsuForm
 		}
 
 		/// <summary>
-		/// 
+		/// Wacotsuが座席確保に失敗した時
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
 		private void wacotsu_Failed(object sender, Wacotsu.FailedEventArgs e)
 		{
 			string message = null;
-			switch (e.FailReason)
-			{
+			switch (e.FailReason) {
 			case NiconicoApi.Live.StatusErrorReason.Closed:
 				message = "すでに終了した放送です";
 				break;
@@ -199,6 +164,142 @@ namespace WacotsuForm
 			MessageBox.Show(message);
 			reservedLiveListView.Items.RemoveByKey(e.LiveId);
 		}
+
+		/// <summary>
+		/// Wacotsuが放送情報を取得し始めたとき
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		private void wacotsu_StartAccess(object sender, Wacotsu.LiveEventArgs e)
+		{
+			statusBarLabel.Text = string.Format("{0}の情報取得を開始..", e.LiveId);
+		}
+
+		private void wacotsu_ReceiveResponse(object sender, Wacotsu.LiveEventArgs e)
+		{
+			statusBarLabel.Text = string.Format("{0}の情報を受信完了", e.LiveId);
+		}
+
+		private void wacotsu_RetryAccess(object sender, Wacotsu.LiveEventArgs e)
+		{
+			statusBarLabel.Text = string.Format("{0}の情報取得を再試行...", e.LiveId);
+		}
+
+		#endregion
+
+		#region Formのイベントハンドラ
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		private void WacotsuForm_Load(object sender, EventArgs e)
+		{
+			init();
+		}
+
+		/// <summary>
+		/// メインウィンドウの状態が変更されたとき
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		private void WacotsuForm_ClientSizeChanged(object sender, EventArgs e)
+		{
+			if (taskTrayEnabledCheckBox.Checked && WindowState == FormWindowState.Minimized) {
+				ShowInTaskbar = false;
+				notifyIcon.ShowBalloonTip(1000, string.Empty, "タスクトレイに格納されます", ToolTipIcon.None);
+			}
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		private void WacotsuForm_FormClosing(object sender, FormClosingEventArgs e)
+		{
+			notifyIcon.Visible = false;
+			Properties.Settings.Default.StartPosition = DesktopLocation;
+			Properties.Settings.Default.Save();
+		}
+
+		#endregion
+
+		#region 時刻取得タイマーのイベントハンドラ
+
+		private async void clockTimer_Tick(object sender, EventArgs e)
+		{
+			serverTime = await api.GetServerTimeAsync();
+			clockLabel.Text = serverTime.ToString("yyyy/MM/dd（ddd）HH:mm");
+			updateListView();
+		}
+
+		#endregion
+
+		#region 放送リストビューの操作
+
+		/// <summary>
+		/// 予約可能な放送一覧をWebから読み込む
+		/// </summary>
+		private async void loadAvailableLiveInfoList()
+		{
+			var httpClient = new HttpClient();
+
+			availableLiveListView.BeginUpdate();
+
+			foreach (var liveInfo in await api.GetRecentLiveInfos()) {
+				// 画像URLから画像データを作成する
+				if (thumbnailImageList.Images.ContainsKey(liveInfo.Id) == false) {
+					var image = Image.FromStream(await httpClient.GetStreamAsync(liveInfo.ImageUri));
+					thumbnailImageList.Images.Add(liveInfo.Id, image);
+				}
+				liveInfos.Add(liveInfo.Id, liveInfo);
+				// 予約可能リストに追加する
+				availableLiveListView.Items.Add(liveInfo.Id, liveInfo.Title, liveInfo.Id);
+			}
+
+			updateListView();
+
+			availableLiveListView.EndUpdate();
+		}
+
+		/// <summary>
+		/// 各放送リストビューの表示を更新する
+		/// </summary>
+		private void updateListView()
+		{
+			updateLiveListViewTime(availableLiveListView);
+			updateLiveListViewTime(reservedLiveListView);
+		}
+
+		/// <summary>
+		/// 単一の放送リストビューの残り時間表示を更新する
+		/// </summary>
+		/// <param name="listView"></param>
+		private void updateLiveListViewTime(ListView listView)
+		{
+			foreach (var item in listView.Items.Cast<ListViewItem>()) {
+				var liveInfo = liveInfos[item.Name];
+				var leftTimeSpan = liveInfo.OpenTime - serverTime;
+				var itemText = liveInfo.OpenTime.ToString("MM/dd(ddd) HH:mm開場");
+				if (leftTimeSpan.TotalSeconds <= 0) {
+					itemText = "上映中";
+				}
+				else if (leftTimeSpan.TotalMinutes < 1) {
+					itemText = "もうすぐ開場";
+				}
+				else if (leftTimeSpan.TotalHours < 3) {
+					itemText = NiconicoApi.TimeUtil.GetLeftTimeSpanString(leftTimeSpan);
+				}
+
+				item.Text = string.Format("<<{0}>>\r\n{1}", itemText, liveInfo.Title);
+			}
+		}
+
+		#endregion
+
+		#region 放送リストビューのイベントハンドラ
 
 		/// <summary>
 		/// リストビューをダブルクリックしたとき
@@ -257,18 +358,9 @@ namespace WacotsuForm
 			}
 		}
 
-		/// <summary>
-		/// メインウィンドウの状態が変更されたとき
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		private void WacotsuForm_ClientSizeChanged(object sender, EventArgs e)
-		{
-			if (taskTrayEnabledCheckBox.Checked && WindowState == FormWindowState.Minimized) {
-				ShowInTaskbar = false;
-				notifyIcon.ShowBalloonTip(1000, string.Empty, "タスクトレイに格納されます", ToolTipIcon.None);
-			}
-		}
+		#endregion
+
+		#region 通知アイコンのイベントハンドラ
 
 		/// <summary>
 		/// タスクバーの通知アイコンがクリックされたとき
@@ -283,43 +375,6 @@ namespace WacotsuForm
 			}
 		}
 
-		private void updateListView()
-		{
-			updateLiveListViewTime(availableLiveListView);
-			updateLiveListViewTime(reservedLiveListView);
-		}
-
-		private void updateLiveListViewTime(ListView listView)
-		{
-			foreach (var item in listView.Items.Cast<ListViewItem>())
-			{
-				var liveInfo = liveInfos[item.Name];
-				var leftTimeSpan = liveInfo.OpenTime - serverTime;
-				var itemText = liveInfo.OpenTime.ToString("MM/dd(ddd) HH:mm開場");
-				if (leftTimeSpan.TotalSeconds <= 0) {
-					itemText = "上映中";
-				}
-				else if (leftTimeSpan.TotalMinutes < 1) {
-					itemText = "もうすぐ開場";
-				}
-				else if (leftTimeSpan.TotalHours < 3) {
-					itemText = NiconicoApi.TimeUtil.GetLeftTimeSpanString(leftTimeSpan);
-				}
-
-				item.Text = string.Format("<<{0}>>\r\n{1}", itemText, liveInfo.Title);
-			}
-		}
-
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		private void WacotsuForm_FormClosing(object sender, FormClosingEventArgs e)
-		{
-			notifyIcon.Visible = false;
-			Properties.Settings.Default.StartPosition = DesktopLocation;
-			Properties.Settings.Default.Save();
-		}
+		#endregion
 	}
 }
