@@ -64,9 +64,6 @@ namespace WacotsuForm
 			wacotsu = new Wacotsu.Wacotsu(api);
 			wacotsu.Success += wacotsu_Success;
 			wacotsu.Failed += wacotsu_Failed;
-			wacotsu.StartAccess += wacotsu_StartAccess;
-			wacotsu.ReceiveResponse += wacotsu_ReceiveResponse;
-			wacotsu.RetryAccess += wacotsu_RetryAccess;
 
 			loadAvailableLiveInfoList();
 			initClock();
@@ -83,6 +80,7 @@ namespace WacotsuForm
 			else {
 				DesktopLocation = Properties.Settings.Default.StartPosition;
 			}
+			this.Activate();
 		}
 
 		/// <summary>
@@ -163,26 +161,6 @@ namespace WacotsuForm
 			}
 			MessageBox.Show(message);
 			reservedLiveListView.Items.RemoveByKey(e.LiveId);
-		}
-
-		/// <summary>
-		/// Wacotsuが放送情報を取得し始めたとき
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		private void wacotsu_StartAccess(object sender, Wacotsu.LiveEventArgs e)
-		{
-			statusBarLabel.Text = string.Format("{0}の情報取得を開始..", e.LiveId);
-		}
-
-		private void wacotsu_ReceiveResponse(object sender, Wacotsu.LiveEventArgs e)
-		{
-			statusBarLabel.Text = string.Format("{0}の情報を受信完了", e.LiveId);
-		}
-
-		private void wacotsu_RetryAccess(object sender, Wacotsu.LiveEventArgs e)
-		{
-			statusBarLabel.Text = string.Format("{0}の情報取得を再試行...", e.LiveId);
 		}
 
 		#endregion
