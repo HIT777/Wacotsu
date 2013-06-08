@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 
 namespace Wacotsu
 {
-	public class ElapsedEventArgs : LiveEventArgs
+	public class LiveOpenInfo
 	{
-		public TimeSpan leftTime { get; set; }
+		public string LiveId { get; set; }
+
+		public DateTime OpenTime { get; set; }
 	}
 }

@@ -214,7 +214,7 @@
 			this.MaximizeBox = false;
 			this.Name = "WacotsuForm";
 			this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
-			this.Text = "Wacotsu 0.3";
+			this.Text = "Wacotsu 0.4";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.WacotsuForm_FormClosing);
 			this.Load += new System.EventHandler(this.WacotsuForm_Load);
 			this.ClientSizeChanged += new System.EventHandler(this.WacotsuForm_ClientSizeChanged);

@@ -33,32 +33,30 @@ namespace NiconicoApi
 			this.httpClient = new HttpClient(httpHandler);
 		}
 
-		/// <summary>
-		/// niconicoのサーバー時間を取得する
-		/// </summary>
-		/// <returns></returns>
-		public async Task<DateTime> GetServerTimeAsync()
+		public DateTime GetServerTime()
 		{
 			// ニコ生アラートAPIにアクセスしたら結果に関わらず必ずサーバー時間を返してくれるのでそれを利用する
 			var requestUri = new Uri("http://live.nicovideo.jp/api/getalertstatus");
-			var xml = await httpClient.GetXmlAsync(requestUri);
+			var xml = httpClient.GetXmlAsync(requestUri).Result;
 			var unixTimeString = xml.Root.Attribute("time").Value;
 			return TimeUtil.UnixTimeToDateTime(unixTimeString).ToLocalTime();
 		}
 
 		/// <summary>
-		/// 指定した生放送の状態を取得する
+		/// niconicoのサーバー時間を取得する
 		/// </summary>
-		/// <param name="liveId">取得したい生放送のID　（例）lv11202010</param>
-		/// <returns>正常に取得できたらLiveStatusを返す
-		/// まだ放送が開場していないならnullを返す
-		/// エラーが起こったら例外を投げる</returns>
-		public async Task<Live.Status> GetLiveStatusAsync(string liveId)
+		/// <returns></returns>
+		public Task<DateTime> GetServerTimeAsync()
+		{
+			return Task<DateTime>.Run(() => GetServerTime());
+		}
+
+		public Live.Status GetLiveStatus(string liveId)
 		{
 			var requestUri = new Uri(string.Format("http://watch.live.nicovideo.jp/api/getplayerstatus?v={0}", liveId));
-			var xml = await httpClient.GetXmlAsync(requestUri);
+			var xml = httpClient.GetXmlAsync(requestUri).Result;
 			var status = xml.Root.Attribute("status").Value;
-			
+
 			if (status != "ok") {
 				var errorCodeString = xml.Descendants("error").Descendants("code").First().Value;
 				if (errorCodeString == "comingsoon") {
@@ -74,13 +72,21 @@ namespace NiconicoApi
 		}
 
 		/// <summary>
-		/// 最近の生放送を取得する
+		/// 指定した生放送の状態を取得する
 		/// </summary>
-		/// <returns></returns>
-		public async Task<IReadOnlyCollection<Live.Info>> GetRecentLiveInfos()
+		/// <param name="liveId">取得したい生放送のID　（例）lv11202010</param>
+		/// <returns>正常に取得できたらLiveStatusを返す
+		/// まだ放送が開場していないならnullを返す
+		/// エラーが起こったら例外を投げる</returns>
+		public Task<Live.Status> GetLiveStatusAsync(string liveId)
+		{
+			return Task<Live.Status>.Run(() => GetLiveStatus(liveId));
+		}
+
+		public IEnumerable<Live.Info> GetRecentLiveInfos()
 		{
 			var requestUri = new Uri("http://ch.nicovideo.jp/menu/anime/");
-			var html = await httpClient.GetHtmlAsync(requestUri);
+			var html = httpClient.GetHtmlAsync(requestUri).Result;
 
 			var liveInfos = new List<Live.Info>();
 			foreach (var node in html.DocumentNode.CssSelect("#sec_live li")) {
@@ -89,12 +95,21 @@ namespace NiconicoApi
 				var imageUri = new Uri(node.CssSelect(".symbol img").First().Attributes["src"].Value);
 				var openTime = (node.CssSelect(".detail .date strong").Count() > 0) ?
 					parseAnimeString(node.CssSelect(".detail .date strong").First().InnerText) :
-					DateTime.MinValue;	
+					DateTime.MinValue;
 
 				var liveInfo = new Live.Info { Id = liveId, Title = liveTitle, ImageUri = imageUri, OpenTime = openTime };
 				liveInfos.Add(liveInfo);
 			}
 			return liveInfos;
+		}
+
+		/// <summary>
+		/// 最近の生放送を取得する
+		/// </summary>
+		/// <returns></returns>
+		public Task<IEnumerable<Live.Info>> GetRecentLiveInfosAsync()
+		{
+			return Task<IEnumerable<Live.Info>>.Run(() => GetRecentLiveInfos());
 		}
 
 		/// <summary>

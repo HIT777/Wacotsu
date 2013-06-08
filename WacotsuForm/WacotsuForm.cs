@@ -57,8 +57,12 @@ namespace WacotsuForm
 
 			// ブラウザのニコニコ認証情報を取り出してAPIを作る
 			browser = new VendorBrowser.VendorBrowsers.Chrome();
-			var userSessionId = browser.GetCookie("nicovideo.jp", "user_session").Value;
-			api = new NiconicoApi.NiconicoApi(userSessionId);
+			var userSessionCookie = browser.GetCookie("nicovideo.jp", "user_session");
+			if (userSessionCookie == null) {
+				MessageBox.Show("ニコニコのログイン情報が見つかりませんでした。ブラウザでニコニコにログインしていることを確認してください");
+				Application.Exit();
+			}
+			api = new NiconicoApi.NiconicoApi(userSessionCookie.Value);
 
 			// APIを作ったら、Wacotsu本体を作る
 			wacotsu = new Wacotsu.Wacotsu(api);
@@ -226,7 +230,7 @@ namespace WacotsuForm
 
 			availableLiveListView.BeginUpdate();
 
-			foreach (var liveInfo in await api.GetRecentLiveInfos()) {
+			foreach (var liveInfo in await api.GetRecentLiveInfosAsync()) {
 				// 画像URLから画像データを作成する
 				if (thumbnailImageList.Images.ContainsKey(liveInfo.Id) == false) {
 					var image = Image.FromStream(await httpClient.GetStreamAsync(liveInfo.ImageUri));
@@ -298,10 +302,10 @@ namespace WacotsuForm
 						MessageBox.Show(liveInfo.Title + " はすでに予約または確保されている放送です");
 						continue;
 					}
-					wacotsu.Reserve(liveInfo.Id, liveInfo.OpenTime);
-					
-					// 予約済リストに追加
+
+					// 予約実行
 					reservedLiveListView.Items.Add(item.Name, item.Text, item.ImageKey);
+					wacotsu.Reserve(liveInfo.Id, liveInfo.OpenTime);
 				}
 
 				// 予約済の放送を取消

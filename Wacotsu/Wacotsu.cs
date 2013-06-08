@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Diagnostics;
 
 namespace Wacotsu
 {
@@ -13,6 +14,11 @@ namespace Wacotsu
 	/// </summary>
 	public sealed class Wacotsu
 	{
+		/// <summary>
+		/// サーバー時刻を同期する間隔時間（秒）
+		/// </summary>
+		private const int ServerTimeSyncIntervalSecond = 30;
+
 		/// <summary>
 		/// 座席確保に成功した時
 		/// </summary>
@@ -24,24 +30,24 @@ namespace Wacotsu
 		public event EventHandler<FailedEventArgs> Failed = delegate { };
 
 		/// <summary>
-		/// 予約中の放送ID -> 開場時間のマップ
-		/// </summary>
-		private IDictionary<string, DateTime> reservedLiveTimes;
-
-		/// <summary>
-		/// 座席取得中の放送ID　一覧
-		/// </summary>
-		private ICollection<string> fetchLives;
-
-		/// <summary>
 		/// ニコニコapi
 		/// </summary>
 		private NiconicoApi.NiconicoApi api;
 
 		/// <summary>
-		/// サーバー時刻
+		/// 予約確定リスト
 		/// </summary>
-		private DateTime serverTime;
+		private List<LiveOpenInfo> reservedLives;
+
+		/// <summary>
+		/// 予約待ち行列
+		/// </summary>
+		private ConcurrentQueue<LiveOpenInfo> reserveQueue;
+
+		/// <summary>
+		/// キャンセル待ち行列
+		/// </summary>
+		private ConcurrentQueue<string> cancelQueue;
 
 		/// <summary>
 		/// コンストラクタ
@@ -49,31 +55,10 @@ namespace Wacotsu
 		public Wacotsu(NiconicoApi.NiconicoApi api)
 		{
 			this.api = api;
-			this.reservedLiveTimes = new ConcurrentDictionary<string, DateTime>();
-			this.fetchLives = new List<string>();
-
-			// サーバー時間合わせスレッド
-			Task.Run(() => {
-				while (true) {
-					serverTime = api.GetServerTimeAsync().Result;
-					System.Threading.Thread.Sleep(10000);
-				}
-			});
-
-			// 残り時間確認スレッド
-			Task.Run(() => checkReserved());
-
-			// 座席取得スレッド
-			Task.Run(() => {
-				while (true) {
-					foreach (var liveId in fetchLives) {
-						fetch(liveId);
-					}
-					if (fetchLives.Count < 1) {
-						System.Threading.Thread.Sleep(10);
-					}
-				}
-			});
+			this.reservedLives = new List<LiveOpenInfo>();
+			this.reserveQueue = new ConcurrentQueue<LiveOpenInfo>();
+			this.cancelQueue = new ConcurrentQueue<string>();
+			Task.Run(() => runBackgroundWork());
 		}
 
 		/// <summary>
@@ -86,8 +71,13 @@ namespace Wacotsu
 			// エラー確認のため最初に一度取得を試みる
 			fetch(liveId);
 
-			// 放送開場時間までの残り時間を取得
-			reservedLiveTimes.Add(liveId, openTime);
+			// 最初の一度ですでにキャンセル待ちになっていた場合は
+			// 確保成功済み　または　生放送エラーなので予約しない
+			if (cancelQueue.Contains(liveId)) {
+				return;
+			}
+
+			reserveQueue.Enqueue(new LiveOpenInfo { LiveId = liveId, OpenTime = openTime });
 		}
 
 		/// <summary>
@@ -96,39 +86,50 @@ namespace Wacotsu
 		/// <param name="liveId"></param>
 		public void Cancel(string liveId)
 		{
-			if (reservedLiveTimes.ContainsKey(liveId)) {
-				reservedLiveTimes.Remove(liveId);
-			}
+			cancelQueue.Enqueue(liveId);
+		}
 
-			if (fetchLives.Contains(liveId)) {
-				lock (((System.Collections.ICollection)fetchLives).SyncRoot) {
-					fetchLives.Remove(liveId);
+		private void runBackgroundWork()
+		{
+			var serverTime = api.GetServerTime();
+			DateTime timeCounter = DateTime.Now;
+			while (true) {
+				var span = DateTime.Now - timeCounter;
+				if (span.TotalSeconds >= ServerTimeSyncIntervalSecond) {
+					serverTime = api.GetServerTime();
+					timeCounter = DateTime.Now;
+					Debug.WriteLine("update server time: {0}", serverTime);
 				}
+				backgroundWork(serverTime);
+				System.Threading.Thread.Sleep(100);
+				serverTime = serverTime.AddMilliseconds(100);
 			}
 		}
 
-		/// <summary>
-		/// 予約中の放送開始までの残り時間を監視して
-		/// 残りわずかになったら取得リストに移す
-		/// </summary>
-		private void checkReserved()
+		private void backgroundWork(DateTime serverTime)
 		{
-			while (true) {
-				foreach (var pair in reservedLiveTimes) {
-					var liveId = pair.Key;
-					var openTime = pair.Value;
-					// 残り時間を出す
-					var leftTimeSpan = openTime - serverTime;
-					// 残り時間がわずかなら取得リストに移す
-					if (leftTimeSpan.TotalMilliseconds <= 1000) {
-						lock (((System.Collections.ICollection)fetchLives).SyncRoot) {
-							fetchLives.Add(liveId);
-						}
-						reservedLiveTimes.Remove(liveId);
-						break;
-					}
+			// 予約追加を確認
+			LiveOpenInfo reserveLiveInfo;
+			if (reserveQueue.TryDequeue(out reserveLiveInfo)) {
+				reservedLives.Add(reserveLiveInfo);
+				Debug.WriteLine("add reserve: {0}", reserveLiveInfo.LiveId);
+			}
+
+			// 予約削除を確認
+			string cancelLiveId;
+			if (cancelQueue.TryDequeue(out cancelLiveId)) {
+				reservedLives.RemoveAll((l) => l.LiveId == cancelLiveId);
+				Debug.WriteLine("cancel reserve: {0}", cancelLiveId);
+			}
+
+			// 残り時間をループで確認
+			foreach (var liveInfo in reservedLives) {
+				// 残り時間わずかなら取得
+				var leftTimeSpan = liveInfo.OpenTime - serverTime;
+				if (leftTimeSpan.TotalMilliseconds <= 2000) {
+					fetch(liveInfo.LiveId);
+					Debug.WriteLine("fetch live!: {0}", liveInfo.LiveId);
 				}
-				System.Threading.Thread.Sleep(10);
 			}
 		}
 
@@ -136,11 +137,11 @@ namespace Wacotsu
 		/// 放送の座席を取得
 		/// </summary>
 		/// <param name="liveId"></param>
-		private async void fetch(string liveId)
+		private void fetch(string liveId)
 		{
 			try {
 				// アクセス
-				var status = await api.GetLiveStatusAsync(liveId);
+				var status = api.GetLiveStatus(liveId);
 				if (status != null) {
 					var successArgs = new SuccessEventArgs { LiveId = liveId, LiveStatus = status };
 					this.Success(this, successArgs);
@@ -155,6 +156,7 @@ namespace Wacotsu
 					this.Failed(this, failedArgs);
 					Cancel(liveId);
 				}
+				// それ以外のエラーは大抵503なのでそのまま再試行
 			}
 		}
 	}

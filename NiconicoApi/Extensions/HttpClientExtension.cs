@@ -17,12 +17,14 @@ namespace NiconicoApi.Extensions
 		/// <param name="client"></param>
 		/// <param name="requestUri"></param>
 		/// <returns></returns>
-		public async static Task<HtmlDocument> GetHtmlAsync(this HttpClient client, Uri requestUri)
+		public static Task<HtmlDocument> GetHtmlAsync(this HttpClient client, Uri requestUri)
 		{
-			var responseString = await client.GetStringAsync(requestUri);
-			var htmlDocument = new HtmlDocument();
-			htmlDocument.LoadHtml(responseString);
-			return htmlDocument;
+			return Task<HtmlDocument>.Run(() => {
+				var responseString = client.GetStringAsync(requestUri).Result;
+				var htmlDocument = new HtmlDocument();
+				htmlDocument.LoadHtml(responseString);
+				return htmlDocument;
+			});
 		}
 		
 		/// <summary>
@@ -31,10 +33,12 @@ namespace NiconicoApi.Extensions
 		/// <param name="client"></param>
 		/// <param name="requestUri"></param>
 		/// <returns></returns>
-		public async static Task<XDocument> GetXmlAsync(this HttpClient client, Uri requestUri)
+		public static Task<XDocument> GetXmlAsync(this HttpClient client, Uri requestUri)
 		{
-			var responseString = await client.GetStringAsync(requestUri);
-			return XDocument.Parse(responseString);
+			return Task<XDocument>.Run(() => {
+				var responseString = client.GetStringAsync(requestUri).Result;
+				return XDocument.Parse(responseString);
+			});
 		}
 	}
 }
