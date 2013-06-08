@@ -6,12 +6,10 @@ using System.Threading.Tasks;
 
 namespace Wacotsu
 {
-	public class FetchResult
+	public class LiveOpenInfo
 	{
-		public DateTime Time { get; set; }
+		public string LiveId { get; set; }
 
-		public Status Status { get; set; }
-
-		public Seat Seat { get; set; }
+		public DateTime OpenTime { get; set; }
 	}
 }

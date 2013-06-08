@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net;
 
-namespace Wacotsu
+namespace VendorBrowser 
 {
 	/// <summary>
 	/// 外部ブラウザを表すクラス
@@ -34,17 +34,17 @@ namespace Wacotsu
 		/// <summary>
 		/// クッキーを取得する
 		/// </summary>
-		/// <param name="uri"></param>
+		/// <param name="domain"></param>
 		/// <param name="name"></param>
 		/// <returns></returns>
-		public abstract Cookie GetCookie(Uri uri, string name);
+		public abstract Cookie GetCookie(string domain, string name);
 
 		/// <summary>
 		/// クッキーを設定する
 		/// </summary>
 		/// <param name="uri"></param>
 		/// <param name="cookie"></param>
-		public abstract void SetCookie(Uri uri, Cookie cookie);
+		public abstract void SetCookie(string domain, Cookie cookie);
 
 		/// <summary>
 		/// ブラウザの実行ファイルの完全パスを取得する

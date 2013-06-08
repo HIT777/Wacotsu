@@ -4,42 +4,37 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Wacotsu
+namespace NiconicoApi.Live
 {
-	public enum Status 
+	public enum StatusErrorReason 
 	{
 		/// <summary>
-		/// 成功
+		/// 原因不明
 		/// </summary>
-		Ok,
-
-		/// <summary>
-		/// 放送前
-		/// </summary>
-		ComingSoon,
+		Unknown,
 
 		/// <summary>
 		/// 放送が見つからない
 		/// </summary>
-		NotFound,
+		NotFound, 
 
 		/// <summary>
 		/// ログインしていない
 		/// </summary>
-		NotLogin,
+		NotLogin, 
 
 		/// <summary>
 		/// 特別な認証が必要であり、それを満たしていない
 		/// </summary>
-		NoAuth,
+		NoAuth, 
 
 		/// <summary>
 		/// すでに終了した放送である
 		/// </summary>
-		Closed,
+		Closed, 
 
 		/// <summary>
-		/// コミュニティに入会する必要がある
+		/// 特定コミュニティに入会する必要がある
 		/// </summary>
 		RequireCommunityMember, 
 	}
