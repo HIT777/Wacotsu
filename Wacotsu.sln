@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.20623.1 VSUPREVIEW
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wacotsu", "Wacotsu\Wacotsu.csproj", "{3CEDFDBB-B6D7-4D31-B737-77CCF70D0944}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NiconicoApi", "NiconicoApi\NiconicoApi.csproj", "{EBFBB7BC-B235-487F-8E04-7CE821A9676E}"
@@ -8,6 +10,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VendorBrowser", "VendorBrowser\VendorBrowser.csproj", "{811527DC-E222-4688-B180-7985F883C634}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WacotsuForm", "WacotsuForm\WacotsuForm.csproj", "{32FDBCF0-77FC-40FE-A29A-6AEEEBD6F0F6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WacotsuTest", "WacotsuTest\WacotsuTest.csproj", "{BAD2AFE6-1A4B-4D4F-8754-07F2973E742F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,6 +35,10 @@ Global
 		{32FDBCF0-77FC-40FE-A29A-6AEEEBD6F0F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{32FDBCF0-77FC-40FE-A29A-6AEEEBD6F0F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{32FDBCF0-77FC-40FE-A29A-6AEEEBD6F0F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BAD2AFE6-1A4B-4D4F-8754-07F2973E742F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BAD2AFE6-1A4B-4D4F-8754-07F2973E742F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BAD2AFE6-1A4B-4D4F-8754-07F2973E742F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BAD2AFE6-1A4B-4D4F-8754-07F2973E742F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
