@@ -11,5 +11,17 @@ namespace Wacotsu.Model
         internal string Id { get; set; }
         internal string Title { get; set; }
         internal ReserveStatus ReservedStatus { get; set; }
+        internal Seat GotSeat
+        {
+            get
+            {
+                if (ReservedStatus != ReserveStatus.Got) {
+                    throw new Exception("座席を確保していない放送の座席情報をとることはできません");
+                }
+                return gotSeat;
+            }
+        }
+
+        private Seat gotSeat;
     }
 }

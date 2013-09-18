@@ -95,6 +95,7 @@
     <Compile Include="LiveOpenInfo.cs" />
     <Compile Include="Model\Live.cs" />
     <Compile Include="Model\ReserveStatus.cs" />
+    <Compile Include="Model\Seat.cs" />
     <Compile Include="ViewModel\LiveListViewModel.cs" />
     <Compile Include="View\MainForm.cs">
       <SubType>Form</SubType>
